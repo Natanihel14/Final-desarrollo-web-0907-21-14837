@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const express = require('express');
 const session = require('express-session');
 const { sequelize } = require('./models');
@@ -8,12 +9,21 @@ const PORT = process.env.PORT || 3001;
 
 app.use(express.json());
 
+// El secreto firma la cookie de sesión, así que no debe estar escrito en el código.
+// Si no se define SESSION_SECRET se genera uno aleatorio en cada arranque
+// (las sesiones abiertas se invalidan al reiniciar el servidor).
+let secreto = process.env.SESSION_SECRET;
+if (!secreto) {
+  secreto = crypto.randomBytes(32).toString('hex');
+  console.warn('SESSION_SECRET no definido: se generó un secreto aleatorio temporal');
+}
+
 // Sesión basada en cookie. La cookie 'sid' solo guarda el id de la sesión;
 // los datos (id, nombre, rol) quedan en el servidor.
 app.use(
   session({
     name: 'sid',
-    secret: process.env.SESSION_SECRET || 'cambiar-este-secreto',
+    secret: secreto,
     resave: false,
     saveUninitialized: false,
     cookie: {
